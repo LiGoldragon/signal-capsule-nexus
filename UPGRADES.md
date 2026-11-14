@@ -26,4 +26,4 @@ Repins signal 10.3.0 (7afb), datom-codec 0.33.0 (eabe) and protos 0.33.0 (3c7a),
 - protos 0.33.0 prints a balanced guillemet pair inside a string without an escape; a consumer holding datom text with an unbalanced guillemet re-reads it.
 - The repository gains a Nix check route: `flake.nix` with build, test, test-datom, doc, fmt and clippy checks, and `rust-toolchain.toml` selecting Rust 1.99.1 by version with that manifest's hash. `tests/datom_contract.rs` reads and prints datom text for the query and response shapes and refuses wrong shapes.
 
-To deploy: repin signal-herdr-nexus 0.2.0 in the consumer and enable `datom` only where text is spoken.
+To deploy: repin signal-capsule-nexus 0.2.0 in the consumer and enable `datom` only where text is spoken.

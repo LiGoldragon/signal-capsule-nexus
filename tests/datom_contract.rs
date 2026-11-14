@@ -1,10 +1,10 @@
-//! The ordinary herdr-nexus contract reads and prints datom text, and refuses wrong shapes.
+//! The ordinary capsule-nexus contract reads and prints datom text, and refuses wrong shapes.
 
 #![cfg(feature = "datom")]
 
 use datom_codec::{Actualizing, Budget, Composing, Datomizable, Path, Potential};
 use protos::{Compactable, Protosizable, ReaderBudget};
-use signal_herdr_nexus::{Query, Response};
+use signal_capsule_nexus::{Query, Response};
 
 fn budget() -> Budget {
     Budget {

@@ -39,7 +39,7 @@ rec {
   #
 
   rootCrate = rec {
-    packageId = "signal-herdr-nexus";
+    packageId = "signal-capsule-nexus";
 
     # Use this attribute to refer to the derivation building your root crate package.
     # You can override the features with rootCrate.build.override { features = [ "default" "feature1" ... ]; }.
@@ -55,10 +55,10 @@ rec {
   # You can override the features with
   # workspaceMembers."${crateName}".build.override { features = [ "default" "feature1" ... ]; }.
   workspaceMembers = {
-    "signal-herdr-nexus" = rec {
-      packageId = "signal-herdr-nexus";
+    "signal-capsule-nexus" = rec {
+      packageId = "signal-capsule-nexus";
       build = internal.buildRustCrateWithFeatures {
-        packageId = "signal-herdr-nexus";
+        packageId = "signal-capsule-nexus";
       };
 
       # Debug support which might change between releases.
@@ -950,12 +950,12 @@ rec {
         };
         resolvedDefaultFeatures = [ "datom" ];
       };
-      "signal-herdr-nexus" = rec {
-        crateName = "signal-herdr-nexus";
+      "signal-capsule-nexus" = rec {
+        crateName = "signal-capsule-nexus";
         version = "0.4.0";
         edition = "2021";
         src = lib.cleanSourceWith { filter = sourceFilter;  src = ./.; };
-        libName = "signal_herdr_nexus";
+        libName = "signal_capsule_nexus";
         dependencies = [
           {
             name = "datom-codec";

@@ -1,5 +1,5 @@
 {
-  description = "signal-herdr-nexus — generated ordinary herdr-nexus Signal contract";
+  description = "signal-capsule-nexus — generated ordinary capsule-nexus Signal contract";
 
   inputs.base.url = "github:LiGoldragon/build-base";
 
@@ -12,7 +12,7 @@
       cargoNix = ./Cargo.nix;
 
       # Every test runs with every feature on.
-      memberChecks = { check, ... }: { signal-herdr-nexus = check "signal-herdr-nexus" [ "default" "datom" ]; };
+      memberChecks = { check, ... }: { signal-capsule-nexus = check "signal-capsule-nexus" [ "default" "datom" ]; };
 
       extraChecks =
         { pkgs, toolchain, check, doc, ... }:
@@ -25,12 +25,12 @@
         in
         {
           # The tests under the default feature set alone.
-          test-default = check "signal-herdr-nexus" [ "default" ];
-          fmt = pkgs.runCommand "signal-herdr-nexus-fmt" { nativeBuildInputs = [ toolchain ]; } ''
+          test-default = check "signal-capsule-nexus" [ "default" ];
+          fmt = pkgs.runCommand "signal-capsule-nexus-fmt" { nativeBuildInputs = [ toolchain ]; } ''
             rustfmt --check --edition ${manifest.package.edition} ${rust}/src/lib.rs ${rust}/tests/*.rs
             touch $out
           '';
-          doc = doc "signal-herdr-nexus" [ "default" "datom" ] [ "-D" "warnings" ];
+          doc = doc "signal-capsule-nexus" [ "default" "datom" ] [ "-D" "warnings" ];
         };
     };
 }
