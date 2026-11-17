@@ -4,7 +4,7 @@
 
 use datom_codec::{Actualizing, Budget, Composing, Datomizable, Path, Potential};
 use protos::{Compactable, Protosizable, ReaderBudget};
-use signal_capsule_nexus::{Query, Response};
+use signal_capsule_nexus::{Input, Output};
 
 fn budget() -> Budget {
     Budget {
@@ -34,22 +34,23 @@ fn round_trip<T: Composing + Datomizable + std::fmt::Debug + PartialEq>(source: 
 
 #[test]
 fn every_query_shape_round_trips() {
-    round_trip::<Query>("Close.{ main wQ:pT }");
-    round_trip::<Query>("List.main");
-    round_trip::<Query>("Subscribe.main");
-    round_trip::<Query>("Press.{ { main wQ:pT } [ Enter ] }");
-    round_trip::<Query>("Prompt.{ { main wQ:pT } «hello world» }");
+    round_trip::<Input>("Close.{ main wQ:pT }");
+    round_trip::<Input>("List.main");
+    round_trip::<Input>("Subscribe.main");
+    round_trip::<Input>("Press.{ { main wQ:pT } [ Enter ] }");
+    round_trip::<Input>("Prompt.{ { main wQ:pT } «hello world» }");
 }
 
 #[test]
 fn a_response_round_trips() {
-    round_trip::<Response>("Changed.{ { main wQ:pT } Idle }");
+    round_trip::<Output>("Changed.{ { main wQ:pT } Idle }");
+    round_trip::<Output>("Listed.AttemptInProgress.{ main wQ:pT }");
 }
 
 #[test]
 fn wrong_shapes_and_unknown_variants_are_refused() {
-    assert!(read::<Query>("Close.main").is_err());
-    assert!(read::<Query>("Frobnicate.main").is_err());
-    assert!(read::<Query>("Press.{ main }").is_err());
-    assert!(read::<Response>("Changed.{ { main wQ:pT } Sleeping }").is_err());
+    assert!(read::<Input>("Close.main").is_err());
+    assert!(read::<Input>("Frobnicate.main").is_err());
+    assert!(read::<Input>("Press.{ main }").is_err());
+    assert!(read::<Output>("Changed.{ { main wQ:pT } Sleeping }").is_err());
 }

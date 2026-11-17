@@ -187,10 +187,6 @@ pub struct MemoryRefusal(pub Message);
 #[rustfmt::skip]
 #[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "datom", derive(datom_codec::Datomizable, datom_codec::Composing))]
-pub struct Unknown(pub Pane);
-#[rustfmt::skip]
-#[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "datom", derive(datom_codec::Datomizable, datom_codec::Composing))]
 pub enum ObservedEffect {
     Done,
     Created(Pane),
@@ -214,17 +210,13 @@ pub struct StoreRefusal {
 #[rustfmt::skip]
 #[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "datom", derive(datom_codec::Datomizable, datom_codec::Composing))]
-pub struct AttemptInProgress(pub Pane);
-#[rustfmt::skip]
-#[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "datom", derive(datom_codec::Datomizable, datom_codec::Composing))]
 pub enum Outcome {
     Done,
     Created(Pane),
     Listed(std::vec::Vec<Known>),
     Refused(Refusal),
     Unknown(Pane),
-    AttemptInProgress(AttemptInProgress),
+    AttemptInProgress(Pane),
     Unavailable(TransportRefusal),
     Uncertain,
     StoreRefused(StoreRefusal),
@@ -254,7 +246,7 @@ pub struct Press_Data {
 #[rustfmt::skip]
 #[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "datom", derive(datom_codec::Datomizable, datom_codec::Composing))]
-pub enum Query {
+pub enum Input {
     Create(Workspace),
     Start(Start_Data),
     Prompt(Prompt_Data),
@@ -273,7 +265,7 @@ pub struct Changed_Data {
 #[rustfmt::skip]
 #[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "datom", derive(datom_codec::Datomizable, datom_codec::Composing))]
-pub enum Response {
+pub enum Output {
     Created(Outcome),
     Started(Outcome),
     Prompted(Outcome),
@@ -283,38 +275,85 @@ pub enum Response {
     Subscribed(Outcome),
     Changed(Changed_Data),
 }
+#[rustfmt::skip]
+#[allow(clippy::result_large_err, clippy::ptr_arg, clippy::borrowed_box)]
+pub trait Answering {
+    fn create(&self, workspace: &Workspace) -> std::result::Result<Outcome, Output>;
+    fn start(&self, start: &Start_Data) -> std::result::Result<Outcome, Output>;
+    fn prompt(&self, prompt: &Prompt_Data) -> std::result::Result<Outcome, Output>;
+    fn press(&self, press: &Press_Data) -> std::result::Result<Outcome, Output>;
+    fn close(&self, pane: &Pane) -> std::result::Result<Outcome, Output>;
+    fn list(&self, session: &Session) -> std::result::Result<Outcome, Output>;
+    fn subscribe(&self, session: &Session) -> std::result::Result<Outcome, Output>;
+}
+#[rustfmt::skip]
+pub trait Answerable {
+    type Answer;
+    fn answer<Nexus: Answering>(&self, nexus: &Nexus) -> Self::Answer;
+}
+#[rustfmt::skip]
+impl Answerable for Input {
+    type Answer = Output;
+    fn answer<Nexus: Answering>(&self, nexus: &Nexus) -> Output {
+        match self {
+            Input::Create(carried) => {
+                nexus.create(carried).map_or_else(|refusal| refusal, Output::Created)
+            }
+            Input::Start(carried) => {
+                nexus.start(carried).map_or_else(|refusal| refusal, Output::Started)
+            }
+            Input::Prompt(carried) => {
+                nexus.prompt(carried).map_or_else(|refusal| refusal, Output::Prompted)
+            }
+            Input::Press(carried) => {
+                nexus.press(carried).map_or_else(|refusal| refusal, Output::Pressed)
+            }
+            Input::Close(carried) => {
+                nexus.close(carried).map_or_else(|refusal| refusal, Output::Closed)
+            }
+            Input::List(carried) => {
+                nexus.list(carried).map_or_else(|refusal| refusal, Output::Listed)
+            }
+            Input::Subscribe(carried) => {
+                nexus
+                    .subscribe(carried)
+                    .map_or_else(|refusal| refusal, Output::Subscribed)
+            }
+        }
+    }
+}
 pub const ETHOS: &str = include_str!("../signal.ethos");
 
-impl signal::Contracted for Query {
+impl signal::Contracted for Input {
     const CONTRACT_SOURCE: &'static str = ETHOS;
 }
 
 #[cfg(test)]
 mod tests {
     use super::{
-        ErrorCode, ExitStatus, Message, Outcome, Pane, PaneId, Query, Refusal, Response, Session,
+        ErrorCode, ExitStatus, Input, Message, Outcome, Output, Pane, PaneId, Refusal, Session,
     };
     use signal::{ByteViewable, Restorable, Signal, Signalizable};
 
     #[test]
     fn public_query_and_response_restore_through_validated_signal() {
-        let query = Query::Close(Pane {
+        let query = Input::Close(Pane {
             session: Session("main".into()),
             pane_id: PaneId("wQ:pT".into()),
         });
         let query_signal = query.signalize().expect("archive public query");
-        let restored_query = Signal::<Query>::from(query_signal.bytes().to_vec())
+        let restored_query = Signal::<Input>::from(query_signal.bytes().to_vec())
             .restore()
             .expect("validate and restore public query");
         assert_eq!(restored_query, query);
 
-        let response = Response::Closed(Outcome::Refused(Refusal {
+        let response = Output::Closed(Outcome::Refused(Refusal {
             error_code: ErrorCode("pane_close_refused".into()),
             exit_status_option: Some(ExitStatus(17)),
             message: Message("pane stayed open".into()),
         }));
         let response_signal = response.signalize().expect("archive public response");
-        let restored_response = Signal::<Response>::from(response_signal.bytes().to_vec())
+        let restored_response = Signal::<Output>::from(response_signal.bytes().to_vec())
             .restore()
             .expect("validate and restore public response");
         assert_eq!(restored_response, response);
