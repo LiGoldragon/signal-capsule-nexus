@@ -150,6 +150,17 @@ pub struct Known {
     pub attempt: Attempt,
 }
 #[rustfmt::skip]
+#[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "datom", derive(datom_codec::Datomizable, datom_codec::Composing))]
+pub struct Panes(pub std::vec::Vec<Known>);
+#[rustfmt::skip]
+#[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "datom", derive(datom_codec::Datomizable, datom_codec::Composing))]
+pub struct Changed {
+    pub pane: Pane,
+    pub state: State,
+}
+#[rustfmt::skip]
 #[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[cfg_attr(feature = "datom", derive(datom_codec::Datomizable, datom_codec::Composing))]
 pub struct ErrorCode(pub String);
@@ -258,13 +269,6 @@ pub enum Input {
 #[rustfmt::skip]
 #[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "datom", derive(datom_codec::Datomizable, datom_codec::Composing))]
-pub struct Changed_Data {
-    pub pane: Pane,
-    pub state: State,
-}
-#[rustfmt::skip]
-#[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "datom", derive(datom_codec::Datomizable, datom_codec::Composing))]
 pub enum Output {
     Created(Outcome),
     Started(Outcome),
@@ -272,8 +276,14 @@ pub enum Output {
     Pressed(Outcome),
     Closed(Outcome),
     Listed(Outcome),
-    Subscribed(Outcome),
-    Changed(Changed_Data),
+    Subscribed(signal::Frame<Panes, Changed>),
+    SubscribeRefused(Outcome),
+}
+#[rustfmt::skip]
+#[allow(clippy::large_enum_variant)]
+pub enum Answer {
+    Once(Output),
+    Subscribed(signal::Stream<Panes, Changed>),
 }
 #[rustfmt::skip]
 #[allow(clippy::result_large_err, clippy::ptr_arg, clippy::borrowed_box)]
@@ -284,7 +294,10 @@ pub trait Answering {
     fn press(&self, press: &Press_Data) -> std::result::Result<Outcome, Output>;
     fn close(&self, pane: &Pane) -> std::result::Result<Outcome, Output>;
     fn list(&self, session: &Session) -> std::result::Result<Outcome, Output>;
-    fn subscribe(&self, session: &Session) -> std::result::Result<Outcome, Output>;
+    fn subscribe(
+        &self,
+        session: &Session,
+    ) -> std::result::Result<signal::Stream<Panes, Changed>, Output>;
 }
 #[rustfmt::skip]
 pub trait Answerable {
@@ -293,31 +306,43 @@ pub trait Answerable {
 }
 #[rustfmt::skip]
 impl Answerable for Input {
-    type Answer = Output;
-    fn answer<Nexus: Answering>(&self, nexus: &Nexus) -> Output {
+    type Answer = Answer;
+    fn answer<Nexus: Answering>(&self, nexus: &Nexus) -> Answer {
         match self {
             Input::Create(carried) => {
-                nexus.create(carried).map_or_else(|refusal| refusal, Output::Created)
+                Answer::Once(
+                    nexus.create(carried).map_or_else(|refusal| refusal, Output::Created),
+                )
             }
             Input::Start(carried) => {
-                nexus.start(carried).map_or_else(|refusal| refusal, Output::Started)
+                Answer::Once(
+                    nexus.start(carried).map_or_else(|refusal| refusal, Output::Started),
+                )
             }
             Input::Prompt(carried) => {
-                nexus.prompt(carried).map_or_else(|refusal| refusal, Output::Prompted)
+                Answer::Once(
+                    nexus
+                        .prompt(carried)
+                        .map_or_else(|refusal| refusal, Output::Prompted),
+                )
             }
             Input::Press(carried) => {
-                nexus.press(carried).map_or_else(|refusal| refusal, Output::Pressed)
+                Answer::Once(
+                    nexus.press(carried).map_or_else(|refusal| refusal, Output::Pressed),
+                )
             }
             Input::Close(carried) => {
-                nexus.close(carried).map_or_else(|refusal| refusal, Output::Closed)
+                Answer::Once(
+                    nexus.close(carried).map_or_else(|refusal| refusal, Output::Closed),
+                )
             }
             Input::List(carried) => {
-                nexus.list(carried).map_or_else(|refusal| refusal, Output::Listed)
+                Answer::Once(
+                    nexus.list(carried).map_or_else(|refusal| refusal, Output::Listed),
+                )
             }
             Input::Subscribe(carried) => {
-                nexus
-                    .subscribe(carried)
-                    .map_or_else(|refusal| refusal, Output::Subscribed)
+                nexus.subscribe(carried).map_or_else(Answer::Once, Answer::Subscribed)
             }
         }
     }
@@ -328,12 +353,63 @@ impl signal::Contracted for Input {
     const CONTRACT_SOURCE: &'static str = ETHOS;
 }
 
+/// A subscription's state follows its changes: a pane whose change is Dead
+/// leaves the panes, so Dead is told once and no later state holds it; a
+/// living state replaces the pane's own, and a pane not yet held is taken in
+/// with that state, no label and its attempt settled.
+impl signal::Following for Panes {
+    type Change = Changed;
+
+    fn after(panes: Self, changed: Changed) -> Self {
+        let Panes(mut known) = panes;
+        let held = known.iter().position(|pane| pane.pane == changed.pane);
+        match (changed.state, held) {
+            (State::Dead, Some(at)) => {
+                known.remove(at);
+            }
+            (State::Dead, None) => {}
+            (state, Some(at)) => known[at].state = state,
+            (state, None) => known.push(Known {
+                pane: changed.pane,
+                label_option: None,
+                state,
+                attempt: Attempt::Settled,
+            }),
+        }
+        Panes(known)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::{
-        ErrorCode, ExitStatus, Input, Message, Outcome, Output, Pane, PaneId, Refusal, Session,
+        Attempt, Changed, ErrorCode, ExitStatus, Input, Known, Label, Message, Outcome, Output,
+        Pane, PaneId, Panes, Refusal, Session, State,
     };
-    use signal::{ByteViewable, Restorable, Signal, Signalizable};
+    use signal::{ByteViewable, Following, Frame, Restorable, Signal, Signalizable};
+
+    fn pane(name: &str) -> Pane {
+        Pane {
+            session: Session("main".into()),
+            pane_id: PaneId(name.into()),
+        }
+    }
+
+    fn known(name: &str, state: State) -> Known {
+        Known {
+            pane: pane(name),
+            label_option: Some(Label(name.into())),
+            state,
+            attempt: Attempt::Settled,
+        }
+    }
+
+    fn changed(name: &str, state: State) -> Changed {
+        Changed {
+            pane: pane(name),
+            state,
+        }
+    }
 
     #[test]
     fn public_query_and_response_restore_through_validated_signal() {
@@ -357,5 +433,60 @@ mod tests {
             .restore()
             .expect("validate and restore public response");
         assert_eq!(restored_response, response);
+    }
+
+    #[test]
+    fn a_living_change_replaces_the_pane_state_and_keeps_its_label() {
+        let panes = Panes(vec![known("a", State::Open), known("b", State::Idle)]);
+        let after = Panes::after(panes, changed("a", State::Busy));
+        assert_eq!(
+            after,
+            Panes(vec![known("a", State::Busy), known("b", State::Idle)])
+        );
+    }
+
+    #[test]
+    fn a_dead_change_removes_the_pane_once() {
+        let panes = Panes(vec![known("a", State::Open), known("b", State::Idle)]);
+        let after = Panes::after(panes, changed("a", State::Dead));
+        assert_eq!(after, Panes(vec![known("b", State::Idle)]));
+        let again = Panes::after(after.clone(), changed("a", State::Dead));
+        assert_eq!(again, after);
+    }
+
+    #[test]
+    fn a_pane_not_yet_held_is_taken_in() {
+        let after = Panes::after(Panes(Vec::new()), changed("c", State::Open));
+        assert_eq!(
+            after,
+            Panes(vec![Known {
+                pane: pane("c"),
+                label_option: None,
+                state: State::Open,
+                attempt: Attempt::Settled,
+            }])
+        );
+    }
+
+    #[test]
+    fn every_subscription_frame_restores_through_validated_signal() {
+        for frame in [
+            Frame::Opened(Panes(vec![known("a", State::Open)])),
+            Frame::Changed(changed("a", State::Dead)),
+            Frame::Lagged(Panes(Vec::new())),
+        ] {
+            let output = Output::Subscribed(frame);
+            let archived = output.signalize().expect("archive a subscription frame");
+            let restored = Signal::<Output>::from(archived.bytes().to_vec())
+                .restore()
+                .expect("validate and restore a subscription frame");
+            assert_eq!(restored, output);
+        }
+        let refused = Output::SubscribeRefused(Outcome::Unknown(pane("a")));
+        let archived = refused.signalize().expect("archive a subscription refusal");
+        let restored = Signal::<Output>::from(archived.bytes().to_vec())
+            .restore()
+            .expect("validate and restore a subscription refusal");
+        assert_eq!(restored, refused);
     }
 }

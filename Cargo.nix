@@ -957,7 +957,7 @@ rec {
       };
       "signal-capsule-nexus" = rec {
         crateName = "signal-capsule-nexus";
-        version = "1.0.1";
+        version = "2.0.0";
         edition = "2021";
         src = lib.cleanSourceWith { filter = sourceFilter;  src = ./.; };
         libName = "signal_capsule_nexus";

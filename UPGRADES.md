@@ -1,5 +1,16 @@
 # Upgrades
 
+## 2.0.0 — Subscribe is answered by a stream
+
+`Subscribe.Session` is answered by `Subscribed.Stream<Panes Changed>`: one subscription of the session, its frames each one `Output::Subscribed(signal::Frame<Panes, Changed>)`. `Opened` comes first and once, with the panes the Capsule holds in the session that are not Dead; `Changed` carries each change; `Lagged` carries the panes anew to a subscriber that fell behind, which goes on from them. A refused Subscribe is answered once, `SubscribeRefused.Outcome`.
+
+- `Changed.{ Pane State }` is a type, no longer an output; its generated struct is `Changed`, where it was `Changed_Data`. `Output::Changed` is gone.
+- `Panes.Vector<Known>` is the subscription's state, and it bears `signal::Following` here, written by hand: a change whose state is Dead removes its pane, so Dead is told once and a later `Opened` holds no dead pane; any other state replaces the pane's own, and a pane not yet held is taken in with no label and its attempt settled.
+- `Answering::subscribe` yields `signal::Stream<Panes, Changed>` or the refusal, and `Answerable`'s `Answer` is the generated `Answer`: `Once(Output)` for every input answered once, `Subscribed(signal::Stream<Panes, Changed>)` for Subscribe.
+- The archive of `Output` changes, so a peer built on 1.x cannot read a 2.0.0 Output; the Datom text of a subscription is its frames, `Subscribed.Opened.[ … ]`, `Subscribed.Changed.{ { main wQ:pT } Idle }`, `Subscribed.Lagged.[ … ]`.
+
+The pins stay: signal 11.2.0 (4f5cbb9), datom-codec 09a0526, protos c93b598. To deploy: answer Subscribe with the stream, read each frame from `Output::Subscribed`, and write `Changed` where it was `Changed_Data`.
+
 ## 1.0.1 — signal 11.2.0
 
 Only the signal pin moves: signal 11.2.0 (4f5cbb9), which adds `signal::Following` and changes no type, archive or digest this contract has. A consumer repins signal with it, so `links = "signal"` finds one package in its graph.
