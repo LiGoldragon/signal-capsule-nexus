@@ -13,7 +13,7 @@ Signal
   Pressed.Outcome
   Closed.Outcome
   Listed.Outcome
-  Subscribed.Stream<Panes Changed>                    ; the session's live panes, then each change
+  Subscribed.Stream<Panes Known>                      ; the session's live panes, then each pane that moved
   SubscribeRefused.Outcome ]                          ; the refusal a Subscribe is answered with once
 [ Session.String                                      ; types
   InstanceId.String
@@ -40,7 +40,6 @@ Signal
   Attempt.[ Settled Uncertain ]
   Known.{ Pane Option<Label> State Attempt }
   Panes.Vector<Known>                                 ; a subscription's state: the panes not Dead
-  Changed.{ Pane State }                              ; one change a subscription carries
   ErrorCode.String
   ExitStatus.Integer
   Message.String

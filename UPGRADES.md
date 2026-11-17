@@ -1,5 +1,14 @@
 # Upgrades
 
+## 3.0.0 — a subscription carries each pane whole
+
+`Subscribe.Session` is answered by `Subscribed.Stream<Panes Known>`: a change is the pane whole, its label and attempt with its state, so a label given at Start reaches every open stream. The type `Changed` is gone; `Output::Subscribed` carries `signal::Frame<Panes, Known>`, and `Answering::subscribe` and `Answer::Subscribed` carry `signal::Stream<Panes, Known>`.
+
+- `Panes` bears `signal::Following` with `type Change = Known`: the Known given replaces the pane held, or is taken in when the pane is not held; a Known whose state is Dead takes the pane out, so Dead is told once.
+- The archive of `Output` changes, so a peer built on 2.x cannot read a 3.0.0 Output. The Datom text of a change is a Known: `Subscribed.Changed.{ { main wQ:pT } Some.designer Idle Settled }`, where it was `Subscribed.Changed.{ { main wQ:pT } Idle }`.
+
+The pins stay: signal 11.2.0 (4f5cbb9), datom-codec 09a0526, protos c93b598. To deploy: publish each moved pane as its Known, and fold `Frame::Changed(known)` with `Panes::after`.
+
 ## 2.0.0 — Subscribe is answered by a stream
 
 `Subscribe.Session` is answered by `Subscribed.Stream<Panes Changed>`: one subscription of the session, its frames each one `Output::Subscribed(signal::Frame<Panes, Changed>)`. `Opened` comes first and once, with the panes the Capsule holds in the session that are not Dead; `Changed` carries each change; `Lagged` carries the panes anew to a subscriber that fell behind, which goes on from them. A refused Subscribe is answered once, `SubscribeRefused.Outcome`.

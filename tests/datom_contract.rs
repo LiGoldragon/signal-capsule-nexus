@@ -53,7 +53,8 @@ fn a_response_round_trips() {
 #[test]
 fn a_subscription_reads_as_its_frames() {
     round_trip::<Output>("Subscribed.Opened.[]");
-    round_trip::<Output>("Subscribed.Changed.{ { main wQ:pT } Idle }");
+    round_trip::<Output>("Subscribed.Changed.{ { main wQ:pT } Some.designer Idle Settled }");
+    round_trip::<Output>("Subscribed.Changed.{ { main wQ:pT } None Dead Uncertain }");
     round_trip::<Output>("Subscribed.Lagged.[]");
     let opened = Output::Subscribed(Frame::Opened(Panes(vec![Known {
         pane: Pane {
@@ -76,6 +77,7 @@ fn wrong_shapes_and_unknown_variants_are_refused() {
     assert!(read::<Input>("Close.main").is_err());
     assert!(read::<Input>("Frobnicate.main").is_err());
     assert!(read::<Input>("Press.{ main }").is_err());
-    assert!(read::<Output>("Subscribed.Changed.{ { main wQ:pT } Sleeping }").is_err());
+    assert!(read::<Output>("Subscribed.Changed.{ { main wQ:pT } None Sleeping Settled }").is_err());
+    assert!(read::<Output>("Subscribed.Changed.{ { main wQ:pT } Idle }").is_err());
     assert!(read::<Output>("Changed.{ { main wQ:pT } Idle }").is_err());
 }

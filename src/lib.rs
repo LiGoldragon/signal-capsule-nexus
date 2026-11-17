@@ -154,13 +154,6 @@ pub struct Known {
 #[cfg_attr(feature = "datom", derive(datom_codec::Datomizable, datom_codec::Composing))]
 pub struct Panes(pub std::vec::Vec<Known>);
 #[rustfmt::skip]
-#[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "datom", derive(datom_codec::Datomizable, datom_codec::Composing))]
-pub struct Changed {
-    pub pane: Pane,
-    pub state: State,
-}
-#[rustfmt::skip]
 #[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[cfg_attr(feature = "datom", derive(datom_codec::Datomizable, datom_codec::Composing))]
 pub struct ErrorCode(pub String);
@@ -276,14 +269,14 @@ pub enum Output {
     Pressed(Outcome),
     Closed(Outcome),
     Listed(Outcome),
-    Subscribed(signal::Frame<Panes, Changed>),
+    Subscribed(signal::Frame<Panes, Known>),
     SubscribeRefused(Outcome),
 }
 #[rustfmt::skip]
 #[allow(clippy::large_enum_variant)]
 pub enum Answer {
     Once(Output),
-    Subscribed(signal::Stream<Panes, Changed>),
+    Subscribed(signal::Stream<Panes, Known>),
 }
 #[rustfmt::skip]
 #[allow(clippy::result_large_err, clippy::ptr_arg, clippy::borrowed_box)]
@@ -297,7 +290,7 @@ pub trait Answering {
     fn subscribe(
         &self,
         session: &Session,
-    ) -> std::result::Result<signal::Stream<Panes, Changed>, Output>;
+    ) -> std::result::Result<signal::Stream<Panes, Known>, Output>;
 }
 #[rustfmt::skip]
 pub trait Answerable {
@@ -353,28 +346,23 @@ impl signal::Contracted for Input {
     const CONTRACT_SOURCE: &'static str = ETHOS;
 }
 
-/// A subscription's state follows its changes: a pane whose change is Dead
-/// leaves the panes, so Dead is told once and no later state holds it; a
-/// living state replaces the pane's own, and a pane not yet held is taken in
-/// with that state, no label and its attempt settled.
+/// A subscription's state follows each pane that moved: the Known given
+/// replaces the pane's own, or is taken in when the pane is not yet held; a
+/// Known whose state is Dead takes the pane out, so Dead is told once and no
+/// later state holds it.
 impl signal::Following for Panes {
-    type Change = Changed;
+    type Change = Known;
 
-    fn after(panes: Self, changed: Changed) -> Self {
+    fn after(panes: Self, moved: Known) -> Self {
         let Panes(mut known) = panes;
-        let held = known.iter().position(|pane| pane.pane == changed.pane);
-        match (changed.state, held) {
+        let held = known.iter().position(|pane| pane.pane == moved.pane);
+        match (&moved.state, held) {
             (State::Dead, Some(at)) => {
                 known.remove(at);
             }
             (State::Dead, None) => {}
-            (state, Some(at)) => known[at].state = state,
-            (state, None) => known.push(Known {
-                pane: changed.pane,
-                label_option: None,
-                state,
-                attempt: Attempt::Settled,
-            }),
+            (_, Some(at)) => known[at] = moved,
+            (_, None) => known.push(moved),
         }
         Panes(known)
     }
@@ -383,8 +371,8 @@ impl signal::Following for Panes {
 #[cfg(test)]
 mod tests {
     use super::{
-        Attempt, Changed, ErrorCode, ExitStatus, Input, Known, Label, Message, Outcome, Output,
-        Pane, PaneId, Panes, Refusal, Session, State,
+        Attempt, ErrorCode, ExitStatus, Input, Known, Label, Message, Outcome, Output, Pane,
+        PaneId, Panes, Refusal, Session, State,
     };
     use signal::{ByteViewable, Following, Frame, Restorable, Signal, Signalizable};
 
@@ -404,10 +392,12 @@ mod tests {
         }
     }
 
-    fn changed(name: &str, state: State) -> Changed {
-        Changed {
+    fn unlabelled(name: &str, state: State, attempt: Attempt) -> Known {
+        Known {
             pane: pane(name),
+            label_option: None,
             state,
+            attempt,
         }
     }
 
@@ -436,9 +426,12 @@ mod tests {
     }
 
     #[test]
-    fn a_living_change_replaces_the_pane_state_and_keeps_its_label() {
-        let panes = Panes(vec![known("a", State::Open), known("b", State::Idle)]);
-        let after = Panes::after(panes, changed("a", State::Busy));
+    fn a_moved_pane_replaces_the_one_held_whole() {
+        let panes = Panes(vec![
+            unlabelled("a", State::Open, Attempt::Uncertain),
+            known("b", State::Idle),
+        ]);
+        let after = Panes::after(panes, known("a", State::Busy));
         assert_eq!(
             after,
             Panes(vec![known("a", State::Busy), known("b", State::Idle)])
@@ -446,25 +439,26 @@ mod tests {
     }
 
     #[test]
-    fn a_dead_change_removes_the_pane_once() {
+    fn a_dead_pane_is_taken_out_once() {
         let panes = Panes(vec![known("a", State::Open), known("b", State::Idle)]);
-        let after = Panes::after(panes, changed("a", State::Dead));
+        let after = Panes::after(panes, known("a", State::Dead));
         assert_eq!(after, Panes(vec![known("b", State::Idle)]));
-        let again = Panes::after(after.clone(), changed("a", State::Dead));
+        let again = Panes::after(after.clone(), known("a", State::Dead));
         assert_eq!(again, after);
     }
 
     #[test]
-    fn a_pane_not_yet_held_is_taken_in() {
-        let after = Panes::after(Panes(Vec::new()), changed("c", State::Open));
+    fn a_pane_not_yet_held_is_taken_in_as_given() {
+        let after = Panes::after(
+            Panes(vec![known("a", State::Open)]),
+            unlabelled("c", State::Open, Attempt::Uncertain),
+        );
         assert_eq!(
             after,
-            Panes(vec![Known {
-                pane: pane("c"),
-                label_option: None,
-                state: State::Open,
-                attempt: Attempt::Settled,
-            }])
+            Panes(vec![
+                known("a", State::Open),
+                unlabelled("c", State::Open, Attempt::Uncertain),
+            ])
         );
     }
 
@@ -472,7 +466,7 @@ mod tests {
     fn every_subscription_frame_restores_through_validated_signal() {
         for frame in [
             Frame::Opened(Panes(vec![known("a", State::Open)])),
-            Frame::Changed(changed("a", State::Dead)),
+            Frame::Changed(known("a", State::Dead)),
             Frame::Lagged(Panes(Vec::new())),
         ] {
             let output = Output::Subscribed(frame);
