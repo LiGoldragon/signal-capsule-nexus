@@ -1,5 +1,12 @@
 # Upgrades
 
+## 0.5.0 — 1.0.0 through 3.0.0 renumbered to the 0.x line
+
+A breaking change on a 0.x crate takes the next minor, so the contract published as 1.0.0, 1.0.1,
+2.0.0 and 3.0.0 is renumbered 0.5.0. The contract, its archive and its Datom text are those of
+3.0.0 (c019498); only the version moves. 1.x, 2.x and 3.x were never deployed and leave the build
+base's registry. A consumer pins 0.5.0 at its new commit in place of 3.0.0.
+
 ## 3.0.0 — a subscription carries each pane whole
 
 `Subscribe.Session` is answered by `Subscribed.Stream<Panes Known>`: a change is the pane whole, its label and attempt with its state, so a label given at Start reaches every open stream. The type `Changed` is gone; `Output::Subscribed` carries `signal::Frame<Panes, Known>`, and `Answering::subscribe` and `Answer::Subscribed` carry `signal::Stream<Panes, Known>`.
