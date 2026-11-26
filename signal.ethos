@@ -25,21 +25,21 @@ Signal
   Name.String
   Value.String
   Variable.{ Name Value }
-  Workspace.{ Session Root Vector<Variable> }
+  Workspace.{ Session Root ⟦ Variable ⟧ }
   AgentName.String
   AgentKind.[ Pi Claude Codex Gemini Cursor Devin Agy Cline Omp
               Mastracode Opencode Copilot Kimi Kiro Droid Amp Grok
               Hermes Kilo Qodercli Qwen Maki ]
   Program.String
   Executable.[ Configured Explicit.Program ]
-  Command.{ AgentName AgentKind Executable Vector<String> }
+  Command.{ AgentName AgentKind Executable ⟦ String ⟧ }
   Text.String
-  Keys.Vector<String>
+  Keys.⟦ String ⟧
   Label.String
   State.[ Open Busy Idle Dead ]
   Attempt.[ Settled Uncertain ]
   Known.{ Pane Option<Label> State Attempt }
-  Panes.Vector<Known>                                 ; a subscription's state: the panes not Dead
+  Panes.⟦ Known ⟧                                 ; a subscription's state: the panes not Dead
   ErrorCode.String
   ExitStatus.Integer
   Message.String
@@ -49,14 +49,14 @@ Signal
   MemoryRefusal.Message
   ObservedEffect.[ Done
                    Created.Pane
-                   Listed.Vector<Known> ]
+                   Listed.⟦ Known ⟧ ]
   StorePhase.[ BeforeEmission
                Observed.ObservedEffect
                Uncertain ]
   StoreRefusal.{ MemoryRefusal StorePhase }
   Outcome.[ Done
             Created.Pane
-            Listed.Vector<Known>
+            Listed.⟦ Known ⟧
             Refused.Refusal
             Unknown.Pane
             AttemptInProgress.Pane

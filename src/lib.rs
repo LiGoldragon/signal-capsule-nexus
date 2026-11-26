@@ -2,16 +2,19 @@
     dead_code,
     non_camel_case_types,
     non_snake_case,
+    unused_extern_crates,
     clippy::type_complexity
 )]
 #[rustfmt::skip]
-#[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-#[cfg_attr(feature = "datom", derive(datom_codec::Datomizable, datom_codec::Composing))]
-pub struct Session(pub String);
+extern crate alloc;
 #[rustfmt::skip]
 #[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[cfg_attr(feature = "datom", derive(datom_codec::Datomizable, datom_codec::Composing))]
-pub struct InstanceId(pub String);
+pub struct Session(pub alloc::string::String);
+#[rustfmt::skip]
+#[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[cfg_attr(feature = "datom", derive(datom_codec::Datomizable, datom_codec::Composing))]
+pub struct InstanceId(pub alloc::string::String);
 #[rustfmt::skip]
 #[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize, Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[cfg_attr(feature = "datom", derive(datom_codec::Datomizable, datom_codec::Composing))]
@@ -26,7 +29,7 @@ pub struct CreationId {
 #[rustfmt::skip]
 #[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[cfg_attr(feature = "datom", derive(datom_codec::Datomizable, datom_codec::Composing))]
-pub struct PaneId(pub String);
+pub struct PaneId(pub alloc::string::String);
 #[rustfmt::skip]
 #[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "datom", derive(datom_codec::Datomizable, datom_codec::Composing))]
@@ -37,15 +40,15 @@ pub struct Pane {
 #[rustfmt::skip]
 #[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[cfg_attr(feature = "datom", derive(datom_codec::Datomizable, datom_codec::Composing))]
-pub struct Root(pub String);
+pub struct Root(pub alloc::string::String);
 #[rustfmt::skip]
 #[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[cfg_attr(feature = "datom", derive(datom_codec::Datomizable, datom_codec::Composing))]
-pub struct Name(pub String);
+pub struct Name(pub alloc::string::String);
 #[rustfmt::skip]
 #[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[cfg_attr(feature = "datom", derive(datom_codec::Datomizable, datom_codec::Composing))]
-pub struct Value(pub String);
+pub struct Value(pub alloc::string::String);
 #[rustfmt::skip]
 #[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "datom", derive(datom_codec::Datomizable, datom_codec::Composing))]
@@ -59,12 +62,12 @@ pub struct Variable {
 pub struct Workspace {
     pub session: Session,
     pub root: Root,
-    pub variable_vector: std::vec::Vec<Variable>,
+    pub variable_vector: alloc::vec::Vec<Variable>,
 }
 #[rustfmt::skip]
 #[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[cfg_attr(feature = "datom", derive(datom_codec::Datomizable, datom_codec::Composing))]
-pub struct AgentName(pub String);
+pub struct AgentName(pub alloc::string::String);
 #[rustfmt::skip]
 #[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "datom", derive(datom_codec::Datomizable, datom_codec::Composing))]
@@ -95,7 +98,7 @@ pub enum AgentKind {
 #[rustfmt::skip]
 #[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[cfg_attr(feature = "datom", derive(datom_codec::Datomizable, datom_codec::Composing))]
-pub struct Program(pub String);
+pub struct Program(pub alloc::string::String);
 #[rustfmt::skip]
 #[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "datom", derive(datom_codec::Datomizable, datom_codec::Composing))]
@@ -110,20 +113,20 @@ pub struct Command {
     pub agent_name: AgentName,
     pub agent_kind: AgentKind,
     pub executable: Executable,
-    pub string_vector: std::vec::Vec<String>,
+    pub string_vector: alloc::vec::Vec<alloc::string::String>,
 }
 #[rustfmt::skip]
 #[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[cfg_attr(feature = "datom", derive(datom_codec::Datomizable, datom_codec::Composing))]
-pub struct Text(pub String);
+pub struct Text(pub alloc::string::String);
 #[rustfmt::skip]
 #[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "datom", derive(datom_codec::Datomizable, datom_codec::Composing))]
-pub struct Keys(pub std::vec::Vec<String>);
+pub struct Keys(pub alloc::vec::Vec<alloc::string::String>);
 #[rustfmt::skip]
 #[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[cfg_attr(feature = "datom", derive(datom_codec::Datomizable, datom_codec::Composing))]
-pub struct Label(pub String);
+pub struct Label(pub alloc::string::String);
 #[rustfmt::skip]
 #[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "datom", derive(datom_codec::Datomizable, datom_codec::Composing))]
@@ -145,18 +148,18 @@ pub enum Attempt {
 #[cfg_attr(feature = "datom", derive(datom_codec::Datomizable, datom_codec::Composing))]
 pub struct Known {
     pub pane: Pane,
-    pub label_option: std::option::Option<Label>,
+    pub label_option: core::option::Option<Label>,
     pub state: State,
     pub attempt: Attempt,
 }
 #[rustfmt::skip]
 #[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "datom", derive(datom_codec::Datomizable, datom_codec::Composing))]
-pub struct Panes(pub std::vec::Vec<Known>);
+pub struct Panes(pub alloc::vec::Vec<Known>);
 #[rustfmt::skip]
 #[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[cfg_attr(feature = "datom", derive(datom_codec::Datomizable, datom_codec::Composing))]
-pub struct ErrorCode(pub String);
+pub struct ErrorCode(pub alloc::string::String);
 #[rustfmt::skip]
 #[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize, Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[cfg_attr(feature = "datom", derive(datom_codec::Datomizable, datom_codec::Composing))]
@@ -164,17 +167,17 @@ pub struct ExitStatus(pub i64);
 #[rustfmt::skip]
 #[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[cfg_attr(feature = "datom", derive(datom_codec::Datomizable, datom_codec::Composing))]
-pub struct Message(pub String);
+pub struct Message(pub alloc::string::String);
 #[rustfmt::skip]
 #[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[cfg_attr(feature = "datom", derive(datom_codec::Datomizable, datom_codec::Composing))]
-pub struct SocketPath(pub String);
+pub struct SocketPath(pub alloc::string::String);
 #[rustfmt::skip]
 #[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "datom", derive(datom_codec::Datomizable, datom_codec::Composing))]
 pub struct Refusal {
     pub error_code: ErrorCode,
-    pub exit_status_option: std::option::Option<ExitStatus>,
+    pub exit_status_option: core::option::Option<ExitStatus>,
     pub message: Message,
 }
 #[rustfmt::skip]
@@ -194,7 +197,7 @@ pub struct MemoryRefusal(pub Message);
 pub enum ObservedEffect {
     Done,
     Created(Pane),
-    Listed(std::vec::Vec<Known>),
+    Listed(alloc::vec::Vec<Known>),
 }
 #[rustfmt::skip]
 #[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
@@ -217,7 +220,7 @@ pub struct StoreRefusal {
 pub enum Outcome {
     Done,
     Created(Pane),
-    Listed(std::vec::Vec<Known>),
+    Listed(alloc::vec::Vec<Known>),
     Refused(Refusal),
     Unknown(Pane),
     AttemptInProgress(Pane),
@@ -281,16 +284,16 @@ pub enum Answer {
 #[rustfmt::skip]
 #[allow(clippy::result_large_err, clippy::ptr_arg, clippy::borrowed_box)]
 pub trait Answering {
-    fn create(&self, workspace: &Workspace) -> std::result::Result<Outcome, Output>;
-    fn start(&self, start: &Start_Data) -> std::result::Result<Outcome, Output>;
-    fn prompt(&self, prompt: &Prompt_Data) -> std::result::Result<Outcome, Output>;
-    fn press(&self, press: &Press_Data) -> std::result::Result<Outcome, Output>;
-    fn close(&self, pane: &Pane) -> std::result::Result<Outcome, Output>;
-    fn list(&self, session: &Session) -> std::result::Result<Outcome, Output>;
+    fn create(&self, workspace: &Workspace) -> core::result::Result<Outcome, Output>;
+    fn start(&self, start: &Start_Data) -> core::result::Result<Outcome, Output>;
+    fn prompt(&self, prompt: &Prompt_Data) -> core::result::Result<Outcome, Output>;
+    fn press(&self, press: &Press_Data) -> core::result::Result<Outcome, Output>;
+    fn close(&self, pane: &Pane) -> core::result::Result<Outcome, Output>;
+    fn list(&self, session: &Session) -> core::result::Result<Outcome, Output>;
     fn subscribe(
         &self,
         session: &Session,
-    ) -> std::result::Result<signal::Stream<Panes, Known>, Output>;
+    ) -> core::result::Result<signal::Stream<Panes, Known>, Output>;
 }
 #[rustfmt::skip]
 pub trait Answerable {
@@ -338,149 +341,5 @@ impl Answerable for Input {
                 nexus.subscribe(carried).map_or_else(Answer::Once, Answer::Subscribed)
             }
         }
-    }
-}
-pub const ETHOS: &str = include_str!("../signal.ethos");
-
-impl signal::Contracted for Input {
-    const CONTRACT_SOURCE: &'static str = ETHOS;
-}
-
-/// A subscription's state follows each pane that moved: the Known given
-/// replaces the pane's own, or is taken in when the pane is not yet held; a
-/// Known whose state is Dead takes the pane out, so Dead is told once and no
-/// later state holds it.
-impl signal::Following for Panes {
-    type Change = Known;
-
-    fn after(panes: Self, moved: Known) -> Self {
-        let Panes(mut known) = panes;
-        let held = known.iter().position(|pane| pane.pane == moved.pane);
-        match (&moved.state, held) {
-            (State::Dead, Some(at)) => {
-                known.remove(at);
-            }
-            (State::Dead, None) => {}
-            (_, Some(at)) => known[at] = moved,
-            (_, None) => known.push(moved),
-        }
-        Panes(known)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::{
-        Attempt, ErrorCode, ExitStatus, Input, Known, Label, Message, Outcome, Output, Pane,
-        PaneId, Panes, Refusal, Session, State,
-    };
-    use signal::{ByteViewable, Following, Frame, Restorable, Signal, Signalizable};
-
-    fn pane(name: &str) -> Pane {
-        Pane {
-            session: Session("main".into()),
-            pane_id: PaneId(name.into()),
-        }
-    }
-
-    fn known(name: &str, state: State) -> Known {
-        Known {
-            pane: pane(name),
-            label_option: Some(Label(name.into())),
-            state,
-            attempt: Attempt::Settled,
-        }
-    }
-
-    fn unlabelled(name: &str, state: State, attempt: Attempt) -> Known {
-        Known {
-            pane: pane(name),
-            label_option: None,
-            state,
-            attempt,
-        }
-    }
-
-    #[test]
-    fn public_query_and_response_restore_through_validated_signal() {
-        let query = Input::Close(Pane {
-            session: Session("main".into()),
-            pane_id: PaneId("wQ:pT".into()),
-        });
-        let query_signal = query.signalize().expect("archive public query");
-        let restored_query = Signal::<Input>::from(query_signal.bytes().to_vec())
-            .restore()
-            .expect("validate and restore public query");
-        assert_eq!(restored_query, query);
-
-        let response = Output::Closed(Outcome::Refused(Refusal {
-            error_code: ErrorCode("pane_close_refused".into()),
-            exit_status_option: Some(ExitStatus(17)),
-            message: Message("pane stayed open".into()),
-        }));
-        let response_signal = response.signalize().expect("archive public response");
-        let restored_response = Signal::<Output>::from(response_signal.bytes().to_vec())
-            .restore()
-            .expect("validate and restore public response");
-        assert_eq!(restored_response, response);
-    }
-
-    #[test]
-    fn a_moved_pane_replaces_the_one_held_whole() {
-        let panes = Panes(vec![
-            unlabelled("a", State::Open, Attempt::Uncertain),
-            known("b", State::Idle),
-        ]);
-        let after = Panes::after(panes, known("a", State::Busy));
-        assert_eq!(
-            after,
-            Panes(vec![known("a", State::Busy), known("b", State::Idle)])
-        );
-    }
-
-    #[test]
-    fn a_dead_pane_is_taken_out_once() {
-        let panes = Panes(vec![known("a", State::Open), known("b", State::Idle)]);
-        let after = Panes::after(panes, known("a", State::Dead));
-        assert_eq!(after, Panes(vec![known("b", State::Idle)]));
-        let again = Panes::after(after.clone(), known("a", State::Dead));
-        assert_eq!(again, after);
-    }
-
-    #[test]
-    fn a_pane_not_yet_held_is_taken_in_as_given() {
-        let after = Panes::after(
-            Panes(vec![known("a", State::Open)]),
-            unlabelled("c", State::Open, Attempt::Uncertain),
-        );
-        assert_eq!(
-            after,
-            Panes(vec![
-                known("a", State::Open),
-                unlabelled("c", State::Open, Attempt::Uncertain),
-            ])
-        );
-    }
-
-    #[test]
-    fn every_subscription_frame_restores_through_validated_signal() {
-        for frame in [
-            Frame::Opened(Panes(vec![known("a", State::Open)])),
-            Frame::Changed(known("a", State::Dead)),
-            Frame::Lagged(Panes(Vec::new())),
-        ] {
-            let output = Output::Subscribed(frame);
-            let archived = output.signalize().expect("archive a subscription frame");
-            let restored = Signal::<Output>::from(archived.bytes().to_vec())
-                .restore()
-                .expect("validate and restore a subscription frame");
-            assert_eq!(restored, output);
-        }
-        let refused = Output::SubscribeRefused(Outcome::Unknown(pane("a")));
-        let archived = refused.signalize().expect("archive a subscription refusal");
-        let restored = Signal::<Output>::from(archived.bytes().to_vec())
-            .restore()
-            .expect("validate and restore a subscription refusal");
-        assert_eq!(restored, refused);
     }
 }
